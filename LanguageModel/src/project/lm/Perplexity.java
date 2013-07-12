@@ -1,5 +1,30 @@
 package project.lm;
 
-public class Perplexity {
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
+public class Perplexity {
+	
+	private LanguageModel lm;
+	
+	public Perplexity(LanguageModel lm) {
+		this.lm = lm;
+	}
+	
+	public double test(File f) throws IOException {
+		double l = 0.0;
+		int M = 0;
+		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+		String line = null;
+		while ((line = br.readLine()) != null) {
+			l += lm.test(line);
+			M++;
+		}
+		br.close();
+		l /= M;
+		return Math.pow(2, -l);
+	}
 }

@@ -11,13 +11,22 @@ public class Test {
 	public static void main(String[] args) {
 		File vocabularyFile = new File(args[0]);
 		File trainingSetFile = new File(args[1]);
-		//LanguageModel lm = new BackoffDiscountModel(3, 0.1);
+		File testSetFile = new File(args[2]);
+		File corpusFile = new File(args[3]);
+		//LanguageModel lm = new KatzBackoffModel(3, 0.1);
 		LanguageModel lm = new GoodTuringModel(3);
 		try {
 			lm.vocabulary(loadVocabulary(vocabularyFile));
 			lm.trainingSet(trainingSetFile);
-			double p1 = lm.stringProbability("aaaa");
-			double p2 = lm.stringProbability("a%%%");
+			//double p1 = lm.stringProbability("aaaa");
+			//double p2 = lm.stringProbability("a%%%");
+			Perplexity p = new Perplexity(lm);
+			double evaluation = p.test(testSetFile);
+			//lm.trainingSet(corpusFile);
+			double p1 = lm.test("aaaa");
+			double p2 = lm.test("a%%%");
+			double p3 = lm.test("aa%%");
+			double p4 = lm.test("aaa%");
 			System.out.println("done.");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

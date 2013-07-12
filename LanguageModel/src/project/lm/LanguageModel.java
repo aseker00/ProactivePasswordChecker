@@ -5,16 +5,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Vector;
 
 public class LanguageModel {
-	protected int order;
+	protected int order;			// ngrams
 	protected double totalUnigramCount;
-	protected FrequencyMatrix T;
-	protected HashSet<Gram> V;
+	protected FrequencyMatrix T;	// transition probability matrix
+	protected HashSet<Gram> V;		// vocabulary
+	protected double mu;			// mean
+	protected double sigma;			// standard deviation
 	
 	public LanguageModel(int o) {
 		this.order = o;
@@ -27,15 +28,24 @@ public class LanguageModel {
 		this.V = v;
 	}
 	
-	public double stringProbability(String s) {
-		double p = 1;
+	public double test(String s) {
 		Vector<NGram> ngrams = toNGrams(s);
+		if (ngrams == null)
+			return 0.0;
+		double ll = logLikelihood(ngrams);
+		double p = (ll/ngrams.size()-mu)/sigma;
+		return p;
+	}
+	
+	private double logLikelihood(Vector<NGram> ngrams) {
+		double ll = 0.0;
 		Iterator<NGram> ngramsIter = ngrams.iterator();
 		while (ngramsIter.hasNext()) {
 			NGram ngram = ngramsIter.next();
-			p *= getTransitionProbability(ngram);
+			double p = getTransitionProbability(ngram);
+			ll += Math.log(p);
 		}
-		return p;
+		return ll;
 	}
 	
 	protected double getTransitionProbability(NGram ngram) {
@@ -43,16 +53,39 @@ public class LanguageModel {
 	}
 	
 	public void trainingSet(File f) throws IOException {
-		FrequencyMatrix counts = calculateNGramCounts(toNGrams(f));
+		Vector<Vector<NGram>> ngrams = toNGrams(f);
+		FrequencyMatrix counts = calculateNGramCounts(ngrams);
 		//counts.unitTest(null);
-		totalUnigramCount = getTotalUnigramCounts(counts);
-		T = estimateTransitionProbabilities(counts);
+		this.totalUnigramCount = getTotalUnigramCounts(counts);
+		this.T = estimateTransitionProbabilities(counts);
+		this.mu = calculateMean(ngrams);
+		this.sigma = calculateStandardDeviation(ngrams);
+	}
+	
+	private double calculateMean(Vector<Vector<NGram>> ngs) {
+		double value = 0.0;
+		Vector<NGram> ngrams = null;
+		Iterator<Vector<NGram>> ngsIter = ngs.iterator();
+		while (ngsIter.hasNext()) {
+			ngrams = ngsIter.next();
+			double ll = logLikelihood(ngrams);
+			value += ll/ngrams.size();
+		}
+		return value/ngs.size();
+	}
+	
+	private double calculateStandardDeviation(Vector<Vector<NGram>> ngs) {
+		double value = 0.0;
+		Iterator<Vector<NGram>> ngsIter = ngs.iterator();
+		while (ngsIter.hasNext()) {
+			Vector<NGram> ngrams = ngsIter.next();
+			double ll = logLikelihood(ngrams);
+			value += Math.pow(ll/ngrams.size()-mu,2);
+		}
+		return Math.sqrt(value/ngs.size());
 	}
 	
 	public void crossValidationSet(File f) throws IOException {
-	}
-	
-	public void testSet(File f) throws IOException {
 	}
 	
 	protected FrequencyMatrix estimateTransitionProbabilities(FrequencyMatrix counts) {
@@ -85,7 +118,8 @@ public class LanguageModel {
 		String line = null;
 		while ((line = br.readLine()) != null) {
 			Vector<NGram> ngs = toNGrams(line);
-			ngrams.add(ngs);
+			if (ngs != null)
+				ngrams.add(ngs);
 		}
 		br.close();
 		return ngrams;
@@ -120,6 +154,8 @@ public class LanguageModel {
 			ngram3fin.gram(2, Gram.STOP);
 			ngrams.add(ngram3fin);
 		}
+		if (ngrams.isEmpty())
+			return null;
 		return ngrams;
 	}
 	
