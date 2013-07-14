@@ -1,10 +1,15 @@
 package project.lm;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.StringTokenizer;
 import java.util.Vector;
 
 public class FrequencyMatrix {
@@ -89,5 +94,31 @@ public class FrequencyMatrix {
 	}
 	public Iterator<NGram> iterator() {
 		return values.keySet().iterator();
+	}
+	
+	public void save(File outputFile) throws IOException {
+		PrintStream ps = new PrintStream(outputFile);
+		Iterator<NGram> tIter = this.iterator();
+		while (tIter.hasNext()) {
+			NGram ngram = tIter.next();
+			ps.println(ngram + "\t" + this.ngramFrequency(ngram));
+		}
+		ps.close();
+	}
+	
+	public void load(File f) throws IOException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+		String line = null;
+		while ((line = br.readLine()) != null) {
+			StringTokenizer st = new StringTokenizer(line, "\t");
+			String s = st.nextToken();
+			double d = Double.parseDouble(st.nextToken());
+			NGram ngram = new NGram(s.length());
+			for (int i = 0; i < s.length(); i++) {
+				ngram.gram(i, new Gram(s.charAt(i)));
+			}
+			this.ngramFrequency(ngram, d);
+		}
+		br.close();
 	}
 }

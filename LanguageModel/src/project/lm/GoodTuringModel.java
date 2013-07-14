@@ -14,6 +14,14 @@ public class GoodTuringModel extends LanguageModel {
 		this.N = new HashMap<Double, Integer>();
 	}
 	
+	public void setZero(double p) {
+		this.zeroProbability = p;
+	}
+	
+	public double getZero() {
+		return this.zeroProbability;
+	}
+	
 	@Override
 	protected double getTransitionProbability(NGram ngram) throws Exception {
 		double p = super.getTransitionProbability(ngram);

@@ -2,10 +2,10 @@ package project.lm;
 
 public class Gram {
 	private char c;
-	public static Gram START = new Gram((char)1);
-	public static Gram STOP = new Gram((char)2);
-	public static Gram OTHER = new Gram((char)3);
-	public static Gram RARE = new Gram((char)4);
+	public static Gram START = new Gram((char)2);
+	public static Gram STOP = new Gram((char)3);
+	public static Gram OTHER = new Gram((char)4);
+	public static Gram RARE = new Gram((char)5);
 	public Gram(char c) {
 		this.c = c;
 	}

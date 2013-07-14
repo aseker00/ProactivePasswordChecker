@@ -20,16 +20,43 @@ public class KatzBackoffModel extends LanguageModel {
 	
 	@Override
 	protected double getTransitionProbability(NGram ngram) throws Exception {
-		return getBackoffTransitionProbability(ngram);
+		double p = super.getTransitionProbability(ngram);
+		if (p == 0.0)
+			return getBackoffTransitionProbability(ngram);
+		return p;
 	}
 	
 	@Override
 	protected FrequencyMatrix estimateTransitionProbabilities(FrequencyMatrix fm) throws Exception {
 		this.counts = fm;
 		this.countsStar = discount(discountValue);
-		alphaTotal = 1.0;
+		this.alphaTotal = 1.0;
 		this.alpha = calculateMissingProbabilityMass();
 		return backoff();
+	}
+	
+	public FrequencyMatrix getAlpha() {
+		return this.alpha;
+	}
+	
+	public void setAlpha(FrequencyMatrix fm) {
+		this.alpha = fm;
+	}
+	
+	public FrequencyMatrix getCounts() {
+		return this.counts;
+	}
+	
+	public void setCounts(FrequencyMatrix fm) {
+		this.counts = fm;
+	}
+	
+	public FrequencyMatrix getCountsStar() {
+		return this.countsStar;
+	}
+	
+	public void setCountsStar(FrequencyMatrix fm) {
+		this.countsStar = fm;
 	}
 	
 	private FrequencyMatrix discount(double dv) {
@@ -61,7 +88,7 @@ public class KatzBackoffModel extends LanguageModel {
 	
 	private FrequencyMatrix calculateMissingProbabilityMass() {
 		FrequencyMatrix	a = new FrequencyMatrix();
-		Iterator<NGram> countsIter = this.countsStar.iterator();
+		Iterator<NGram> countsIter = this.counts.iterator();
 		while (countsIter.hasNext()) {
 			NGram ngram = countsIter.next();
 			double countStarVal = this.countsStar.ngramFrequency(ngram);
@@ -115,22 +142,28 @@ public class KatzBackoffModel extends LanguageModel {
 			else if (ngram.length() == 2) {
 				NGram ngrami = ngram.sub(0, ngram.length()-1);
 				double a = this.alpha.ngramFrequency(ngrami);
+				if (a == 0.0)
+					throw new Exception("zero alpha for ngrami: " +  ngrami);
 				NGram ng = ngram.sub(1, ngram.length()-1);
 				double cc = this.counts.ngramFrequency(ng);
 				if (cc == 0.0) {
-					//pp = 1.0/this.V.size();
-					throw new Exception("zero count for ngram: " +  ng);
+					cc = 1.0/Math.pow(this.V.size(), 2);
+					//throw new Exception("zero count for ngram: " +  ng);
 				}
 				double sum = getSumBackoffs(ngrami);
-				p = a == 0.0 ? this.alphaTotal*cc/sum : a*cc/sum;
+				//p = a == 0.0 ? this.alphaTotal*cc/sum : a*cc/sum;
+				p = a*cc/sum;
 			}
 			else {
 				NGram ngrami = ngram.sub(0, ngram.length()-1);
 				double a = this.alpha.ngramFrequency(ngrami);
+				//if (a == 0.0)
+				//	throw new Exception("zero alpha for ngrami: " +  ngrami);
 				NGram ng = ngram.sub(1, ngram.length()-1);
 				double pp = getBackoffTransitionProbability(ng);
 				double sum = getSumBackoffs(ngrami);
 				p = a == 0.0 ? pp/sum : a*pp/sum;
+				//p = a*pp/sum;
 			}
 		}
 		return p;
