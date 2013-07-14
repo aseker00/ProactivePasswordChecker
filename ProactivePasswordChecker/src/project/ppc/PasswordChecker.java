@@ -1,13 +1,18 @@
-package project.lm;
+package project.ppc;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashSet;
 
-public class Test {
+import project.lm.GoodTuringModel;
+import project.lm.Gram;
+import project.lm.LanguageModel;
+import project.lm.Perplexity;
+import project.lm.Vocabulary;
+
+public class PasswordChecker {
 	public static void main(String[] args) {
 		File vocabularyFile = new File(args[0]);
 		File trainingSetFile = new File(args[1]);
@@ -27,15 +32,26 @@ public class Test {
 			double p2 = lm.test("a%%%");
 			double p3 = lm.test("aa%%");
 			double p4 = lm.test("aaa%");
-			System.out.println("done.");
+			double p5 = lm.test("a%b%");
+			double p6 = lm.test("8shmone8");
+			double p7 = lm.test("%a$m^!#t8");
+			System.out.println("perplexity = " + evaluation);
+			System.out.println("p1 = " + p1);
+			System.out.println("p2 = " + p2);
+			System.out.println("p3 = " + p3);
+			System.out.println("p4 = " + p4);
+			System.out.println("p5 = " + p5);
+			System.out.println("p6 = " + p6);
+			System.out.println("p7 = " + p7);
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	private static HashSet<Gram> loadVocabulary(File f) throws IOException {
-		HashSet<Gram> v = new HashSet<Gram>();
+	private static Vocabulary loadVocabulary(File f) throws IOException {
+		Vocabulary v = new Vocabulary();
 		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
 		String line = null;
 		while ((line = br.readLine()) != null) {
