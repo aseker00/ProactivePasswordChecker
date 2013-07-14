@@ -8,26 +8,22 @@ import java.io.InputStreamReader;
 
 import project.lm.GoodTuringModel;
 import project.lm.Gram;
+import project.lm.KatzBackoffModel;
 import project.lm.LanguageModel;
 import project.lm.Perplexity;
 import project.lm.Vocabulary;
 
 public class PasswordChecker {
 	public static void main(String[] args) {
-		File vocabularyFile = new File(args[0]);
-		File trainingSetFile = new File(args[1]);
-		File testSetFile = new File(args[2]);
-		File corpusFile = new File(args[3]);
-		//LanguageModel lm = new KatzBackoffModel(3, 0.1);
-		LanguageModel lm = new GoodTuringModel(3);
+		File trainingSetFile = new File(args[0]);
+		File testSetFile = new File(args[1]);
+		LanguageModel lm = new KatzBackoffModel(3, 0.1);
+		//LanguageModel lm = new GoodTuringModel(3);
 		try {
-			lm.vocabulary(loadVocabulary(vocabularyFile));
+			lm.vocabulary(new Vocabulary());
 			lm.trainingSet(trainingSetFile);
-			//double p1 = lm.stringProbability("aaaa");
-			//double p2 = lm.stringProbability("a%%%");
 			Perplexity p = new Perplexity(lm);
 			double evaluation = p.test(testSetFile);
-			//lm.trainingSet(corpusFile);
 			double p1 = lm.test("aaaa");
 			double p2 = lm.test("a%%%");
 			double p3 = lm.test("aa%%");
@@ -35,6 +31,8 @@ public class PasswordChecker {
 			double p5 = lm.test("a%b%");
 			double p6 = lm.test("8shmone8");
 			double p7 = lm.test("%a$m^!#t8");
+			double p8 = lm.test("amit");
+			double p9 = lm.test("conner");
 			System.out.println("perplexity = " + evaluation);
 			System.out.println("p1 = " + p1);
 			System.out.println("p2 = " + p2);
@@ -43,8 +41,13 @@ public class PasswordChecker {
 			System.out.println("p5 = " + p5);
 			System.out.println("p6 = " + p6);
 			System.out.println("p7 = " + p7);
+			System.out.println("p8 = " + p8);
+			System.out.println("p9 = " + p9);
 			
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

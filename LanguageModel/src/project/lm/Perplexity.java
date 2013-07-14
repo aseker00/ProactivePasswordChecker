@@ -20,8 +20,13 @@ public class Perplexity {
 		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
 		String line = null;
 		while ((line = br.readLine()) != null) {
-			l += lm.test(line);
-			M++;
+			try {
+				l += lm.test(line);
+				M++;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		br.close();
 		l /= M;

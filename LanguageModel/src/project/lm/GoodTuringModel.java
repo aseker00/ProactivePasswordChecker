@@ -7,7 +7,7 @@ public class GoodTuringModel extends LanguageModel {
 	
 	private FrequencyMatrix counts;
 	private HashMap<Double, Integer> N;
-	private double zeroCount;
+	private double zeroProbability;
 
 	public GoodTuringModel(int o) {
 		super(o);
@@ -15,25 +15,18 @@ public class GoodTuringModel extends LanguageModel {
 	}
 	
 	@Override
-	protected double getTransitionProbability(NGram ngram) {
+	protected double getTransitionProbability(NGram ngram) throws Exception {
 		double p = super.getTransitionProbability(ngram);
-		if (p == 0.0) {
-			double val = getAdjustedCount(ngram);
-			NGram ngrami = ngram.sub(0, ngram.length()-1);
-			double vali = this.counts.ngramFrequency(ngrami);
-			if (vali == 0.0) {
-				vali = this.V.size()*val;
-			}
-			p = val/vali;
-		}
-		return p;
+		if (p > 0.0)
+			return p;
+		return this.zeroProbability;
 	}
 	
 	@Override
-	protected FrequencyMatrix estimateTransitionProbabilities(FrequencyMatrix fm) {
+	protected FrequencyMatrix estimateTransitionProbabilities(FrequencyMatrix fm) throws Exception {
 		this.counts = fm;
 		this.N = calculateFrequencyCounts();
-		this.zeroCount = calculateZeroCount();
+		this.zeroProbability = calculateZeroCount();
 		this.counts = recalculateNGramFrequencies();
 		return super.estimateTransitionProbabilities(this.counts);
 	}
@@ -90,10 +83,7 @@ public class GoodTuringModel extends LanguageModel {
 	
 	private double getAdjustedCount(NGram ngram) {
 		double val = this.counts.ngramFrequency(ngram);
-		if (val == 0.0) {
-			val = this.zeroCount;
-		}
-		else if (val <= 5.0) {
+		if (val <= 5.0) {
 			int n1 = this.N.get(val+1.0);
 			int n = this.N.get(val);
 			val = (val+1.0)*n1/n;

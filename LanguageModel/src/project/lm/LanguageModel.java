@@ -5,7 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashSet;
+
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -13,7 +13,7 @@ public class LanguageModel {
 	protected int order;			// ngrams
 	protected double totalUnigramCount;
 	protected FrequencyMatrix T;	// transition probability matrix
-	protected HashSet<Gram> V;		// vocabulary
+	protected Vocabulary V;			// vocabulary
 	protected double mu;			// mean
 	protected double sigma;			// standard deviation
 	
@@ -21,14 +21,14 @@ public class LanguageModel {
 		this.order = o;
 		this.totalUnigramCount = 0;
 		this.T = new FrequencyMatrix();
-		this.V = new HashSet<Gram>();
+		this.V = new Vocabulary();
 	}
 	
-	public void vocabulary(HashSet<Gram> v) {
+	public void vocabulary(Vocabulary v) {
 		this.V = v;
 	}
 	
-	public double test(String s) {
+	public double test(String s) throws Exception {
 		Vector<NGram> ngrams = toNGrams(s);
 		if (ngrams == null)
 			return 0.0;
@@ -37,7 +37,7 @@ public class LanguageModel {
 		return p;
 	}
 	
-	private double logLikelihood(Vector<NGram> ngrams) {
+	private double logLikelihood(Vector<NGram> ngrams) throws Exception {
 		double ll = 0.0;
 		Iterator<NGram> ngramsIter = ngrams.iterator();
 		while (ngramsIter.hasNext()) {
@@ -48,11 +48,11 @@ public class LanguageModel {
 		return ll;
 	}
 	
-	protected double getTransitionProbability(NGram ngram) {
+	protected double getTransitionProbability(NGram ngram) throws Exception {
 		return T.ngramFrequency(ngram);
 	}
 	
-	public void trainingSet(File f) throws IOException {
+	public void trainingSet(File f) throws Exception {
 		Vector<Vector<NGram>> ngrams = toNGrams(f);
 		FrequencyMatrix counts = calculateNGramCounts(ngrams);
 		//counts.unitTest(null);
@@ -62,7 +62,7 @@ public class LanguageModel {
 		this.sigma = calculateStandardDeviation(ngrams);
 	}
 	
-	private double calculateMean(Vector<Vector<NGram>> ngs) {
+	private double calculateMean(Vector<Vector<NGram>> ngs) throws Exception {
 		double value = 0.0;
 		Vector<NGram> ngrams = null;
 		Iterator<Vector<NGram>> ngsIter = ngs.iterator();
@@ -74,7 +74,7 @@ public class LanguageModel {
 		return value/ngs.size();
 	}
 	
-	private double calculateStandardDeviation(Vector<Vector<NGram>> ngs) {
+	private double calculateStandardDeviation(Vector<Vector<NGram>> ngs) throws Exception {
 		double value = 0.0;
 		Iterator<Vector<NGram>> ngsIter = ngs.iterator();
 		while (ngsIter.hasNext()) {
@@ -88,7 +88,7 @@ public class LanguageModel {
 	public void crossValidationSet(File f) throws IOException {
 	}
 	
-	protected FrequencyMatrix estimateTransitionProbabilities(FrequencyMatrix counts) {
+	protected FrequencyMatrix estimateTransitionProbabilities(FrequencyMatrix counts) throws Exception {
 		return maximumLikelihoodEstimate(counts);
 	}
 	
@@ -127,32 +127,32 @@ public class LanguageModel {
 	
 	private Vector<NGram> toNGrams(String x) {
 		Vector<NGram> ngrams = new Vector<NGram>();
-		NGram ngram3 = null;
+		NGram ngram = null;
 		for (int i = 0; i < x.length(); ++i) {
-			ngram3 = new NGram(3);
+			ngram = new NGram(3);
 			if (i == 0) {
-				ngram3.gram(0, Gram.START);
-				ngram3.gram(1, Gram.START);
-				ngram3.gram(2, new Gram(x.charAt(i)));
+				ngram.gram(0, Gram.START);
+				ngram.gram(1, Gram.START);
+				ngram.gram(2, this.V.get(new Gram(x.charAt(i))));
 			}
 			else if (i == 1) {
-				ngram3.gram(0, Gram.START);
-				ngram3.gram(1, new Gram(x.charAt(i-1)));
-				ngram3.gram(2, new Gram(x.charAt(i)));
+				ngram.gram(0, Gram.START);
+				ngram.gram(1, this.V.get(new Gram(x.charAt(i-1))));
+				ngram.gram(2, this.V.get(new Gram(x.charAt(i))));
 			}
 			else {
-				ngram3.gram(0, new Gram(x.charAt(i-2)));
-				ngram3.gram(1, new Gram(x.charAt(i-1)));
-				ngram3.gram(2, new Gram(x.charAt(i)));
+				ngram.gram(0, this.V.get(new Gram(x.charAt(i-2))));
+				ngram.gram(1, this.V.get(new Gram(x.charAt(i-1))));
+				ngram.gram(2, this.V.get(new Gram(x.charAt(i))));
 			}
-			ngrams.add(ngram3);
+			ngrams.add(ngram);
 		}
-		if (ngram3 != null) {
-			NGram ngram3fin = new NGram(3);
-			ngram3fin.gram(0, ngram3.gram(1));
-			ngram3fin.gram(1, ngram3.gram(2));
-			ngram3fin.gram(2, Gram.STOP);
-			ngrams.add(ngram3fin);
+		if (ngram != null) {
+			NGram ngramfin = new NGram(3);
+			ngramfin.gram(0, ngram.gram(1));
+			ngramfin.gram(1, ngram.gram(2));
+			ngramfin.gram(2, Gram.STOP);
+			ngrams.add(ngramfin);
 		}
 		if (ngrams.isEmpty())
 			return null;

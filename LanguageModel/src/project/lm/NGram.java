@@ -1,6 +1,7 @@
 package project.lm;
 
 public class NGram {
+	
 	private Gram[] grams;
 	public NGram(int n) {
 		grams = new Gram[n];
