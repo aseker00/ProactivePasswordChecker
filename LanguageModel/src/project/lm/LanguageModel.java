@@ -28,6 +28,34 @@ public class LanguageModel {
 		this.V = v;
 	}
 	
+	public void setMu(double mu) {
+		this.mu = mu;
+	}
+	
+	public void setSigma(double sigma) {
+		this.sigma = sigma;
+	}
+	
+	public double getMu() {
+		return this.mu;
+	}
+	
+	public double getSigma() {
+		return this.sigma;
+	}
+	
+	public FrequencyMatrix getTransitionProbabilityMatrix() {
+		return this.T;
+	}
+	
+	public int getOrder() {
+		return this.order;
+	}
+	
+	public void setTransitionProbabilityMatrix(FrequencyMatrix tm) {
+		this.T = tm;
+	}
+	
 	public double test(String s) throws Exception {
 		Vector<NGram> ngrams = toNGrams(s);
 		if (ngrams == null)
