@@ -3,7 +3,6 @@ package project.lm;
 import java.util.Iterator;
 
 public class KatzBackoffModel extends LanguageModel {
-	private double alphaTotal;
 	private double discountValue;
 	private FrequencyMatrix counts;
 	private FrequencyMatrix countsStar;
@@ -15,7 +14,6 @@ public class KatzBackoffModel extends LanguageModel {
 		counts = new FrequencyMatrix();
 		countsStar = new FrequencyMatrix();
 		alpha = new FrequencyMatrix();
-		alphaTotal = 1.0;
 	}
 	
 	@Override
@@ -30,7 +28,6 @@ public class KatzBackoffModel extends LanguageModel {
 	protected FrequencyMatrix estimateTransitionProbabilities(FrequencyMatrix fm) throws Exception {
 		this.counts = fm;
 		this.countsStar = discount(discountValue);
-		this.alphaTotal = 1.0;
 		this.alpha = calculateMissingProbabilityMass();
 		return backoff();
 	}
@@ -86,24 +83,21 @@ public class KatzBackoffModel extends LanguageModel {
 		return fm;
 	}
 	
-	private FrequencyMatrix calculateMissingProbabilityMass() {
+	private FrequencyMatrix calculateMissingProbabilityMass() throws Exception {
 		FrequencyMatrix	a = new FrequencyMatrix();
 		Iterator<NGram> countsIter = this.counts.iterator();
 		while (countsIter.hasNext()) {
 			NGram ngram = countsIter.next();
+			if (ngram.length() == 1)
+				continue;
 			double countStarVal = this.countsStar.ngramFrequency(ngram);
-			if (ngram.length() > 1) {
-				NGram ngrami = ngram.sub(0, ngram.length()-1);
-				double countVali = this.counts.ngramFrequency(ngrami);
-				Double aVali = a.ngramFrequency(ngrami);
-				if (aVali == 0.0)
-					aVali = 1.0;
-				aVali -= countStarVal/countVali;
-				a.ngramFrequency(ngrami, aVali);
-			}
-			else {
-				alphaTotal -= countStarVal/this.totalUnigramCount;
-			}
+			NGram ngrami = ngram.sub(0, ngram.length()-1);
+			double countVali = this.counts.ngramFrequency(ngrami);
+			Double aVali = a.ngramFrequency(ngrami);
+			if (aVali == 0.0)
+				aVali = 1.0;
+			aVali -= countStarVal/countVali;
+			a.ngramFrequency(ngrami, aVali);
 		}
 		return a;
 	}
@@ -126,44 +120,28 @@ public class KatzBackoffModel extends LanguageModel {
 			p = getDiscountedProbability(ngram);
 		}
 		else {
-			if (ngram.length() == 1) {
+			if (ngram.length() == 1)
 				throw new Exception("invalid ngram length: " + ngram);
-//				double sum = 0.0;
-//				Iterator<Gram> vocabIter = this.V.iterator();
-//				while (vocabIter.hasNext()) {
-//					Gram g = vocabIter.next();
-//					NGram ng = new NGram(1);
-//					ng.gram(0, g);
-//					if (this.counts.ngramFrequency(ng) == 0.0)
-//						sum++;
-//				}
-//				p = this.alphaTotal/sum;
-			}
-			else if (ngram.length() == 2) {
+			if (ngram.length() == 2) {
 				NGram ngrami = ngram.sub(0, ngram.length()-1);
 				double a = this.alpha.ngramFrequency(ngrami);
 				if (a == 0.0)
-					throw new Exception("zero alpha for ngrami: " +  ngrami);
+					a = 1.0;
 				NGram ng = ngram.sub(1, ngram.length()-1);
 				double cc = this.counts.ngramFrequency(ng);
 				if (cc == 0.0) {
 					cc = 1.0/Math.pow(this.V.size(), 2);
-					//throw new Exception("zero count for ngram: " +  ng);
 				}
 				double sum = getSumBackoffs(ngrami);
-				//p = a == 0.0 ? this.alphaTotal*cc/sum : a*cc/sum;
 				p = a*cc/sum;
 			}
 			else {
 				NGram ngrami = ngram.sub(0, ngram.length()-1);
 				double a = this.alpha.ngramFrequency(ngrami);
-				//if (a == 0.0)
-				//	throw new Exception("zero alpha for ngrami: " +  ngrami);
 				NGram ng = ngram.sub(1, ngram.length()-1);
 				double pp = getBackoffTransitionProbability(ng);
 				double sum = getSumBackoffs(ngrami);
 				p = a == 0.0 ? pp/sum : a*pp/sum;
-				//p = a*pp/sum;
 			}
 		}
 		return p;

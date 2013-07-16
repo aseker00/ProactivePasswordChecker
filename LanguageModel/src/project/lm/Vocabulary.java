@@ -38,7 +38,8 @@ public class Vocabulary {
 			return new Gram(Character.toLowerCase(g.c()));
 		if (g.c() == ' ')
 			return g;
-		return Gram.OTHER;
-		//return g;
+		if (!Character.isLetter(g.c()))
+			return Gram.OTHER;
+		return g;
 	}
 }

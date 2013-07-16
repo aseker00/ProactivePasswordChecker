@@ -87,58 +87,22 @@ public class PasswordChecker {
 		}
 	}
 	
-//	public void saveTransitionMatrix(File outputFile) throws FileNotFoundException {
-//		PrintStream ps = new PrintStream(outputFile);
-//		Iterator<NGram> tIter = lm.getTransitionProbabilityMatrix().iterator();
-//		while (tIter.hasNext()) {
-//			NGram ngram = tIter.next();
-//			ps.println(ngram + "\t" + lm.getTransitionProbabilityMatrix().ngramFrequency(ngram));
-//		}
-//		ps.close();
-//	}
-	
-//	public void loadTransitionMatrix(File f) throws IOException {
-//		FrequencyMatrix tm = new FrequencyMatrix();
-//		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
-//		String line = null;
-//		while ((line = br.readLine()) != null) {
-//			StringTokenizer st = new StringTokenizer(line, "\t");
-//			String s = st.nextToken();
-//			double d = Double.parseDouble(st.nextToken());
-//			NGram ngram = new NGram(s.length());
-//			for (int i = 0; i < s.length(); i++) {
-//				ngram.gram(i, new Gram(s.charAt(i)));
-//			}
-//			tm.ngramFrequency(ngram, d);
-//		}
-//		br.close();
-//		this.lm.setTransitionProbabilityMatrix(tm);
-//	}
-	
 	public static void main(String[] args) {
-		PasswordChecker pc = null;
-		File configurationFile = new File("project.properties");
-		try {
-			pc = new PasswordChecker(configurationFile);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		if (args.length == 0) {
-			System.out.println("missing arguments: " + args);
+		if (args.length < 4) {
+			System.out.println("not enough arguments");
 			System.out.println("usage:\n" + usage());
 			System.exit(-1);
 		}
 		try {
 			String action = args[0];
+			File configurationFile = new File(args[1]);
+			PasswordChecker pc = new PasswordChecker(configurationFile);
+			File transitionMatrixFile = new File(args[2]);
 			if (action.equals("train")) {
-				File trainingSetFile = new File(args[1]);
+				File trainingSetFile = new File(args[3]);
 				pc.getLanguageModel().trainingSet(trainingSetFile);
-				File transitionMatrixFile = new File(args[2]);
-				//pc.saveTransitionMatrix(transitionMatrixFile);
 				pc.saveModel(transitionMatrixFile);
-				if (args.length > 3) {
+				if (args.length > 4) {
 					File testSetFile = new File(args[args.length-1]);
 					Perplexity perplexity = new Perplexity(pc.getLanguageModel());
 					double eval = perplexity.test(testSetFile);
@@ -147,8 +111,7 @@ public class PasswordChecker {
 				pc.saveConfiguration(configurationFile);
 			}
 			else if (action.equals("test")) {
-				File transitionMatrixFile = new File(args[1]);
-				File testSetFile = new File(args[2]);
+				File testSetFile = new File(args[3]);
 				pc.loadModel(transitionMatrixFile);
 				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(testSetFile)));
 				String line = null;
@@ -160,8 +123,8 @@ public class PasswordChecker {
 			}
 			else if (action.equals("pwd")) {
 				boolean scoreFlag = false;
-				if (args.length > 3) {
-					String flag = args[1];
+				if (args.length > 4) {
+					String flag = args[3];
 					if (flag.equals("-s"))
 						scoreFlag = true;
 					else {
@@ -170,7 +133,6 @@ public class PasswordChecker {
 						System.exit(-1);
 					}
 				}
-				File transitionMatrixFile = new File(args[args.length-2]);
 				pc.loadModel(transitionMatrixFile);
 				String password = args[args.length-1];
 				double p = pc.getLanguageModel().test(password);
@@ -198,9 +160,9 @@ public class PasswordChecker {
 	}
 	
 	private static String usage() {
-		String str1 = "java PasswordChecker train <training_set_file_path> <transition_matrix_file> [<test_set_file_path>]	;	train bad password language model and save transition matrix file [use test set file to evaluate the model]";
-		String str2 = "java PasswordChecker test <transition_matrix_file> <test_set_file_path>	;	load transition matrix and test all the passwords in test set file";
-		String str3 = "java PasswordChecker pwd [-s] <transition_matrix_file> <password>	;	load transition matrix and check password [-s for raw probability score]";
+		String str1 = "java PasswordChecker train <config_properties_file_path> <transition_matrix_file> <training_set_file_path> [<test_set_file_path>]	;	train bad password language model and save transition matrix file [use test set file to evaluate the model]";
+		String str2 = "java PasswordChecker test <config_properties_file_path> <transition_matrix_file> <test_set_file_path>	;	load transition matrix and test all the passwords in test set file";
+		String str3 = "java PasswordChecker pwd <config_properties_file_path> <transition_matrix_file> [-s] <password>	;	load transition matrix and check password [-s for raw probability score]";
 		return str1 + "\n" + str2 + "\n" + str3 + "\n";
 	}
 }
