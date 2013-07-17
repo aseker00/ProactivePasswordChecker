@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Properties;
 
@@ -24,6 +25,12 @@ public class PasswordChecker {
 		loadConfiguration(configurationFile);
 	}
 	
+	public PasswordChecker(String modelType) throws Exception {
+		this.configuration = new Properties();
+		InputStream is = this.getClass().getResourceAsStream("/data/model/" + modelType + ".properties");
+		loadConfiguration(is);
+	}
+	
 	public LanguageModel getLanguageModel() {
 		return this.lm;
 	}
@@ -33,7 +40,11 @@ public class PasswordChecker {
 	}
 	
 	public void loadConfiguration(File configurationFile) throws Exception {
-		this.configuration.load(new FileInputStream(configurationFile));
+		loadConfiguration(new FileInputStream(configurationFile));
+	}
+	
+	public void loadConfiguration(InputStream is) throws Exception {
+		this.configuration.load(is);
 		String model = this.configuration.getProperty("model");
 		int order = Integer.parseInt(this.configuration.getProperty("ngram"));
 		double mu = Double.parseDouble(this.configuration.getProperty("mu"));
@@ -63,27 +74,51 @@ public class PasswordChecker {
 		this.configuration.store(new FileOutputStream(configurationFile), null);
 	}
 	
-	public void saveModel(File modelFile) throws IOException {
-		this.lm.getTransitionProbabilityMatrix().save(modelFile);
+	public void saveModel(File dir) throws IOException {
+		String modelType = getModelType();
+		this.lm.getTransitionProbabilityMatrix().save(new File(dir.getPath() + "\\" + modelType + ".tpm.dat"));
 		if (this.lm instanceof KatzBackoffModel) {
-			File alphaFile = new File(modelFile.getParent() + "\\kb.alpha.dat");
+			File alphaFile = new File(dir.getPath() + "\\" + modelType + ".alpha.dat");
 			((KatzBackoffModel)this.lm).getAlpha().save(alphaFile);
-			File countsFile = new File(modelFile.getParent() + "\\kb.counts.dat");
+			File countsFile = new File(dir.getPath() + "\\" + modelType + ".counts.dat");
 			((KatzBackoffModel)this.lm).getCounts().save(countsFile);
-			File countsStarFile = new File(modelFile.getParent() + "\\kb.cstar.dat");
+			File countsStarFile = new File(dir.getPath() + "\\" + modelType + ".cstar.dat");
 			((KatzBackoffModel)this.lm).getCountsStar().save(countsStarFile);
 		}
 	}
 	
-	public void loadModel(File modelFile) throws IOException {
-		this.lm.getTransitionProbabilityMatrix().load(modelFile);
+	private String getModelType() {
+		if (this.lm instanceof GoodTuringModel)
+			return "gt";
+		else if (this.lm instanceof KatzBackoffModel)
+			return "kb";
+		throw null;
+	}
+	
+	public void loadModel(File dir) throws IOException {
+		String modelType = getModelType();
+		this.lm.getTransitionProbabilityMatrix().load(new File(dir.getPath() + "\\" + modelType + ".tpm.dat"));
 		if (this.lm instanceof KatzBackoffModel) {
-			File alphaFile = new File(modelFile.getParent() + "\\kb.alpha.dat");
+			File alphaFile = new File(dir.getPath() + "\\" + modelType + ".alpha.dat");
 			((KatzBackoffModel)this.lm).getAlpha().load(alphaFile);
-			File countsFile = new File(modelFile.getParent() + "\\kb.counts.dat");
+			File countsFile = new File(dir.getPath() + "\\" + modelType + ".counts.dat");
 			((KatzBackoffModel)this.lm).getCounts().load(countsFile);
-			File countsStarFile = new File(modelFile.getParent() + "\\kb.cstar.dat");
+			File countsStarFile = new File(dir.getPath() + "\\" + modelType + ".cstar.dat");
 			((KatzBackoffModel)this.lm).getCountsStar().load(countsStarFile);
+		}
+	}
+	
+	public void loadModel() throws IOException {
+		String modelType = getModelType();
+		InputStream tpmInputStream = this.getClass().getResourceAsStream("/data/model/" + modelType + ".tpm.dat");
+		this.lm.getTransitionProbabilityMatrix().load(tpmInputStream);
+		if (this.lm instanceof KatzBackoffModel) {
+			InputStream alphaInputStream = this.getClass().getResourceAsStream("/data/model/" + modelType + ".alpha.dat");
+			((KatzBackoffModel)this.lm).getAlpha().load(alphaInputStream);
+			InputStream countsInputStream = this.getClass().getResourceAsStream("/data/model/" + modelType + ".tpm.dat");
+			((KatzBackoffModel)this.lm).getCounts().load(countsInputStream);
+			InputStream cstarInputStream = this.getClass().getResourceAsStream("/data/model/" + modelType + ".tpm.dat");
+			((KatzBackoffModel)this.lm).getCountsStar().load(cstarInputStream);
 		}
 	}
 	
@@ -95,54 +130,64 @@ public class PasswordChecker {
 		}
 		try {
 			String action = args[0];
-			File configurationFile = new File(args[1]);
+			File configurationFile = new File(args[args.length-3]);
+			File transitionMatrixFile = new File(args[args.length-2]);
 			PasswordChecker pc = new PasswordChecker(configurationFile);
-			File transitionMatrixFile = new File(args[2]);
 			if (action.equals("train")) {
-				File trainingSetFile = new File(args[3]);
+				File trainingSetFile = new File(args[args.length-1]);
 				pc.getLanguageModel().trainingSet(trainingSetFile);
 				pc.saveModel(transitionMatrixFile);
 				if (args.length > 4) {
-					File testSetFile = new File(args[args.length-1]);
+					File testSetFile = new File(args[4]);
 					Perplexity perplexity = new Perplexity(pc.getLanguageModel());
 					double eval = perplexity.test(testSetFile);
-					System.out.println("Perplexity = " + eval);
+					System.out.println(eval);
 				}
 				pc.saveConfiguration(configurationFile);
 			}
 			else if (action.equals("test")) {
-				File testSetFile = new File(args[3]);
+				boolean flag = false;
+				if (args.length > 4) {
+					String flagStr = args[1];
+					if (!flagStr.equals("-s")) {
+						System.out.println("invalid flag: " + flagStr);
+						System.out.println("usage: " + usage());
+						System.exit(-1);
+					}
+					flag = true;
+				}
 				pc.loadModel(transitionMatrixFile);
+				File testSetFile = new File(args[args.length-1]);
 				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(testSetFile)));
 				String line = null;
 				while ((line = br.readLine()) != null) {
 					double p = pc.getLanguageModel().test(line);
-					System.out.println(p);
+					if (flag)
+						System.out.println(p < pc.getThreshold() ? "strong" : "weak");
+					else
+						System.out.println(p);
+					
 				}
 				br.close();
 			}
 			else if (action.equals("pwd")) {
-				boolean scoreFlag = false;
+				boolean flag = false;
 				if (args.length > 4) {
-					String flag = args[3];
-					if (flag.equals("-s"))
-						scoreFlag = true;
-					else {
-						System.out.println("invalid pwd flag: " + flag);
+					String flagStr = args[1];
+					if (!flagStr.equals("-s")) {
+						System.out.println("invalid flag: " + flagStr);
 						System.out.println("usage: " + usage());
 						System.exit(-1);
 					}
+					flag = true;
 				}
 				pc.loadModel(transitionMatrixFile);
 				String password = args[args.length-1];
 				double p = pc.getLanguageModel().test(password);
-				if (scoreFlag) {
+				if (flag)
+					System.out.println(p < pc.getThreshold() ? "strong" : "weak");
+				else
 					System.out.println(p);
-				}
-				else {
-					boolean good = p < pc.getThreshold();
-					System.out.println(good);
-				}
 			}
 			else {
 				System.out.println("invalid action: " + action);
@@ -161,8 +206,8 @@ public class PasswordChecker {
 	
 	private static String usage() {
 		String str1 = "java PasswordChecker train <config_properties_file_path> <transition_matrix_file> <training_set_file_path> [<test_set_file_path>]	;	train bad password language model and save transition matrix file [use test set file to evaluate the model]";
-		String str2 = "java PasswordChecker test <config_properties_file_path> <transition_matrix_file> <test_set_file_path>	;	load transition matrix and test all the passwords in test set file";
-		String str3 = "java PasswordChecker pwd <config_properties_file_path> <transition_matrix_file> [-s] <password>	;	load transition matrix and check password [-s for raw probability score]";
+		String str2 = "java PasswordChecker test [-s] <config_properties_file_path> <transition_matrix_file> <test_set_file_path>	;	load transition matrix and test all the passwords in test set file";
+		String str3 = "java PasswordChecker pwd [-s] <config_properties_file_path> <transition_matrix_file> <password>	;	load transition matrix and check password [-s for raw probability score]";
 		return str1 + "\n" + str2 + "\n" + str3 + "\n";
 	}
 }

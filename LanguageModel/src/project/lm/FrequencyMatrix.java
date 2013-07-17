@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.HashMap;
@@ -105,7 +106,11 @@ public class FrequencyMatrix {
 	}
 	
 	public void load(File f) throws IOException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+		load(new FileInputStream(f));
+	}
+	
+	public void load(InputStream is) throws IOException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(is));
 		String line = null;
 		while ((line = br.readLine()) != null) {
 			StringTokenizer st = new StringTokenizer(line, "\t");
