@@ -7,6 +7,15 @@ div {
 	font-family: "Segoe UI Web Light","Segoe UI Light","Segoe UI Web Regular","Segoe UI","Segoe UI Symbol","Helvetica Neue",Arial;
 }
 
+.header {
+	min-width: 480px;
+	line-height: 142%;
+	display: block;
+	background-color: #2672EC;
+	color: white;
+	font-size: 150%;
+}
+
 .singleInput, .fileInput {
 	width: 320px;
 	float: left;

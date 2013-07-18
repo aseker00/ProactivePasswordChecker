@@ -25,7 +25,7 @@ public class PasswordWebsiteServlet extends HttpServlet {
 	
 	public PasswordWebsiteServlet() throws Exception {
 		this.htmlString = getFileContents(new File("pwdcheck.html"));
-		this.pc = initPasswordChecker();
+		this.pc = initPasswordChecker("gt");
 	}
 	public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		resp.setContentType("text/html");
@@ -88,9 +88,8 @@ public class PasswordWebsiteServlet extends HttpServlet {
 		return str;
 	}
 	
-	private PasswordChecker initPasswordChecker() throws Exception {
-		PasswordChecker pc = new PasswordChecker("gt");
-		pc.loadModel();
+	private PasswordChecker initPasswordChecker(String type) throws Exception {
+		PasswordChecker pc = new PasswordChecker(type, null);
 		return pc;
 	}
 	
