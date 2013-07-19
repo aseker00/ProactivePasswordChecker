@@ -1,5 +1,9 @@
 package project.lm;
 
+/*
+ * 1-gram
+ * In our case, each gram is a single character.
+ */
 public class Gram {
 	private char c;
 	public static Gram START = new Gram((char)2);

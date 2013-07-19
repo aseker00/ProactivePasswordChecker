@@ -6,6 +6,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+/*
+ * Measure of quality of a language model
+ */
 public class Perplexity {
 	
 	private LanguageModel lm;
@@ -14,10 +17,14 @@ public class Perplexity {
 		this.lm = lm;
 	}
 	
+	/*
+	 * l = 1/M * sum(log(p(s))
+	 * return 2^(-l)
+	 */
 	public double test(File f) throws IOException {
 		double l = 0.0;
 		int M = 0;
-		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
 		String line = null;
 		while ((line = br.readLine()) != null) {
 			try {

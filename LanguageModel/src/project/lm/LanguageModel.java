@@ -9,6 +9,13 @@ import java.io.InputStreamReader;
 import java.util.Iterator;
 import java.util.Vector;
 
+/*
+ * Main interface:
+ * 	train - given a training set, produce the transition probability matrix associated with the 
+ * maximum likelihood counts.
+ * 	test - given a test set or a single password produce the probability of them/it being generated
+ * from the language model.
+ */
 public class LanguageModel {
 	protected int order;			// ngrams
 	protected double totalUnigramCount;
@@ -56,6 +63,10 @@ public class LanguageModel {
 		this.T = tm;
 	}
 	
+	/*
+	 * Compute llf = sum of log likelihood of each ngram
+	 * Transrom the log likelihood estimate into the final test, need to scale, center and normalize
+	 */
 	public double test(String s) throws Exception {
 		Vector<NGram> ngrams = toNGrams(s);
 		if (ngrams == null)
@@ -80,11 +91,16 @@ public class LanguageModel {
 		return T.ngramFrequency(ngram);
 	}
 	
-	public void trainingSet(File f) throws Exception {
+	/*
+	 * Generate the counts based on the training data
+	 * Generate the transition probability matrix based on the maximum likelihood estimation
+	 * Generate the mean and standard deviation
+	 */
+	public void train(File f) throws Exception {
 		Vector<Vector<NGram>> ngrams = toNGrams(f);
 		FrequencyMatrix counts = calculateNGramCounts(ngrams);
 		//counts.unitTest(null);
-		this.totalUnigramCount = getTotalUnigramCounts(counts);
+		this.totalUnigramCount = getTotalUnigramCounts(counts); // use this as fall-back in case some symbol was not seen in the training data
 		this.T = estimateTransitionProbabilities(counts);
 		this.mu = calculateMean(ngrams);
 		this.sigma = calculateStandardDeviation(ngrams);
@@ -113,6 +129,9 @@ public class LanguageModel {
 		return Math.sqrt(value/ngs.size());
 	}
 	
+	/*
+	 * TBD: would be used by LinearInterpolcation
+	 */
 	public void crossValidationSet(File f) throws IOException {
 	}
 	
@@ -120,6 +139,9 @@ public class LanguageModel {
 		return maximumLikelihoodEstimate(counts);
 	}
 	
+	/*
+	 * q = Count(Wi-2,Wi-1,W)/Count(Wi-2,Wi-1)
+	 */
 	private FrequencyMatrix maximumLikelihoodEstimate(FrequencyMatrix counts) {
 		FrequencyMatrix tm = new FrequencyMatrix();
 		Iterator<NGram> countsIter = counts.iterator();
@@ -142,7 +164,7 @@ public class LanguageModel {
 	
 	private Vector<Vector<NGram>> toNGrams(File f) throws IOException {
 		Vector<Vector<NGram>> ngrams = new Vector<Vector<NGram>>();
-		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
 		String line = null;
 		while ((line = br.readLine()) != null) {
 			Vector<NGram> ngs = toNGrams(line);
@@ -153,6 +175,14 @@ public class LanguageModel {
 		return ngrams;
 	}
 	
+	/*
+	 * Transform a password into a list of n-grams.
+	 * Remember that the first two n-grams are:
+	 * <START,START,W1>, <START,W1,W2>
+	 * and the last n-gram is:
+	 * <Wn-1, Wn,STOP>
+	 * in order to account for the length of the password being a random variable 
+	 */
 	private Vector<NGram> toNGrams(String x) {
 		Vector<NGram> ngrams = new Vector<NGram>();
 		NGram ngram = null;
@@ -200,6 +230,9 @@ public class LanguageModel {
 		return total;
 	}
 	
+	/*
+	 * For each n-gram, increment its value in the Frequency Matrix
+	 */
 	private FrequencyMatrix calculateNGramCounts(Vector<Vector<NGram>> ngs) {
 		FrequencyMatrix counts = new FrequencyMatrix();
 		Iterator<Vector<NGram>> ngsIter = ngs.iterator();

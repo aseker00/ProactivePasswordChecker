@@ -6,6 +6,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 
+/*
+ * Linear Interpolation smoothing
+ * Not used!!
+ */
 public class LinearInterpolationModel extends LanguageModel {
 	
 	private FrequencyMatrix counts;

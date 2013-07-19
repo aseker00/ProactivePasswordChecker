@@ -16,20 +16,6 @@ div {
 	font-size: 150%;
 }
 
-.singleInput, .fileInput {
-	width: 320px;
-	float: left;
-}
-
-.seperator {
-	width: 80px;
-	float: left;
-}
-
-.output {
-	float: left;
-}
-
 .title {
 	font-size: 150%;
 }
@@ -37,6 +23,30 @@ div {
 .subtitle {
 	display: block;
 	font-size: 100%;
+}
+
+.fileInput, .singleInput, .seperator {
+	position: absolute;
+	top: 60px;
+	width: 320px;
+}
+
+.fileInput {
+	left: 40px;
+}
+
+.seperator {
+	left: 360px;
+}
+
+.singleInput {
+	left: 440px;
+}
+
+.output {
+	position: absolute;
+	top: 320px;
+	left: 40px;
 }
 
 input.submit {

@@ -2,6 +2,13 @@ package project.lm;
 
 import java.util.Iterator;
 
+/*
+ * A language model that implements the Katz Back-off smoothing technique
+ * to handle unseen n-grams during test.
+ * Unlike the Good Turing method, this is a discounting method where each count
+ * is subtracted some discounting value and the missing probability mass is 
+ * used to account for unseen n-grams 
+ */
 public class KatzBackoffModel extends LanguageModel {
 	private double discountValue;
 	private FrequencyMatrix counts;
@@ -16,6 +23,10 @@ public class KatzBackoffModel extends LanguageModel {
 		alpha = new FrequencyMatrix();
 	}
 	
+	/*
+	 * If the n-gram was unseen in the training data, give it the unseen backed-off
+	 * transition probability.
+	 */
 	@Override
 	protected double getTransitionProbability(NGram ngram) throws Exception {
 		double p = super.getTransitionProbability(ngram);
@@ -24,6 +35,11 @@ public class KatzBackoffModel extends LanguageModel {
 		return p;
 	}
 	
+	/*
+	 * Discount the current counts.
+	 * Calculate the missing probability.
+	 * Finally compute the backed-off transition probability matrix.
+	 */
 	@Override
 	protected FrequencyMatrix estimateTransitionProbabilities(FrequencyMatrix fm) throws Exception {
 		this.counts = fm;
@@ -56,14 +72,22 @@ public class KatzBackoffModel extends LanguageModel {
 		this.countsStar = fm;
 	}
 	
+	/*
+	 * Subtract the discount value from all the counts
+	 */
 	private FrequencyMatrix discount(double dv) {
 		FrequencyMatrix fm = new FrequencyMatrix();
 		Iterator<NGram> countsIter = this.counts.iterator();
 		while (countsIter.hasNext()) {
+			
+			// This is the count discounting part
 			NGram ngram = countsIter.next();
 			double val = this.counts.ngramFrequency(ngram);
 			double cstar = val - dv;
 			fm.ngramFrequency(ngram, cstar);
+			
+			// This part I am not sure about - account for the suffix bi-grams
+			// in the last tri-gram.
 			if (ngram.gram(ngram.length()-1).equals(Gram.STOP)) {
 				NGram ng = ngram.sub(1, ngram.length()-1);
 				val = fm.ngramFrequency(ng);
@@ -71,6 +95,8 @@ public class KatzBackoffModel extends LanguageModel {
 				fm.ngramFrequency(ng, val);
 			}
 		}
+		
+		// This part is related to the part I am not sure about
 		countsIter = fm.iterator();
 		while (countsIter.hasNext()) {
 			NGram ngram = countsIter.next();
@@ -83,6 +109,10 @@ public class KatzBackoffModel extends LanguageModel {
 		return fm;
 	}
 	
+	/*
+	 * Product the alpha matrix.
+	 * a = 1 - sum(Count(Wi-2,Wi-1,W)/Count(Wi-2,Wi-1)) for all W that Count(Wi-2,Wi-1,W) > 0
+	 */
 	private FrequencyMatrix calculateMissingProbabilityMass() throws Exception {
 		FrequencyMatrix	a = new FrequencyMatrix();
 		Iterator<NGram> countsIter = this.counts.iterator();
@@ -102,6 +132,10 @@ public class KatzBackoffModel extends LanguageModel {
 		return a;
 	}
 	
+	/*
+	 * Return the adjusted transition probability matrix after the
+	 * adjusted counts are calculated
+	 */
 	private FrequencyMatrix backoff() throws Exception {
 		FrequencyMatrix tm = new FrequencyMatrix();
 		Iterator<NGram> countsIter = this.counts.iterator();
@@ -113,6 +147,12 @@ public class KatzBackoffModel extends LanguageModel {
 		return tm;
 	}
 	
+	/*
+	 * if the n-gram was seen in the training data then
+	 * q = C*(Wi-2,Wi-1,W)/Count
+	 * else
+	 * q = a(Wi-2,Wi-1) * q(Wi-1,W)/sum(q(Wi-1,W)) for all W such Count(Wi-2,Wi-1,W) = 0
+	 */
 	private double getBackoffTransitionProbability(NGram ngram) throws Exception {
 		double p = 0.0;
 		double c = this.countsStar.ngramFrequency(ngram);
@@ -147,6 +187,9 @@ public class KatzBackoffModel extends LanguageModel {
 		return p;
 	}
 	
+	/*
+	 * The discounted probability is C*(Wi-2,Wi-1,W)/Count
+	 */
 	private double getDiscountedProbability(NGram ngram) {
 		double c = 0.0;
 		double cstar = this.countsStar.ngramFrequency(ngram);
@@ -157,6 +200,9 @@ public class KatzBackoffModel extends LanguageModel {
 		return cstar/c;
 	}
 	
+	/*
+	 * sum the probabilities of all the n-grams that were not seen in the training set
+	 */
 	private double getSumBackoffs(NGram ngram) throws Exception {
 		double sum = 0.0;
 		Iterator<Gram> vocabIter = this.V.iterator();

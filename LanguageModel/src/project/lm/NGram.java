@@ -1,5 +1,10 @@
 package project.lm;
 
+/*
+ * n-gram
+ * In our case each occurrence in the language is a word (the password).
+ * Therefore each n-gram is a sequence of characters in the password.
+ */
 public class NGram {
 	
 	private Gram[] grams;
@@ -16,6 +21,9 @@ public class NGram {
 		return grams[i];
 	}
 	
+	/*
+	 * Get sub-gram
+	 */
 	public NGram sub(int offset, int len) {
 		if (offset+len > grams.length)
 			return null;
@@ -26,6 +34,9 @@ public class NGram {
 		return ng;
 	}
 	
+	/*
+	 * Needed since this class is used as a key in the FrequencyMatrix
+	 */
 	@Override
 	public int hashCode() {
 		return toString().hashCode();

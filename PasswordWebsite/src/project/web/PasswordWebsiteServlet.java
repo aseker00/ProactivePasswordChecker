@@ -27,6 +27,10 @@ public class PasswordWebsiteServlet extends HttpServlet {
 		this.htmlString = getFileContents(new File("pwdcheck.html"));
 		this.pc = initPasswordChecker("gt");
 	}
+	
+	/*
+	 * Respond to a get request
+	 */
 	public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		resp.setContentType("text/html");
 		String responsePage = this.htmlString.replace("%outputTable", "");
@@ -34,6 +38,10 @@ public class PasswordWebsiteServlet extends HttpServlet {
 		resp.getWriter().println(responsePage);
 	}
 	
+	/*
+	 * Respond to a post form submission by testing the input with the password checker
+	 * and send back a table with the results. 
+	 */
 	public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		if (ServletFileUpload.isMultipartContent(req)) {
 			ServletFileUpload upload = new ServletFileUpload();
@@ -88,6 +96,10 @@ public class PasswordWebsiteServlet extends HttpServlet {
 		return str;
 	}
 	
+	/*
+	 * Create and initialize the password checker.
+	 * Pass a null value to indicate that the language model should be loaded from the jar resource. 
+	 */
 	private PasswordChecker initPasswordChecker(String type) throws Exception {
 		PasswordChecker pc = new PasswordChecker(type, null);
 		return pc;
@@ -113,9 +125,12 @@ public class PasswordWebsiteServlet extends HttpServlet {
 		return baos;
 	}
 	
+	/*
+	 * Process one password at a time and add a row to the output table
+	 */
 	private String getTable(InputStream is) throws Exception {
 		String str = getTableHeader();
-		BufferedReader br = new BufferedReader(new InputStreamReader(is));
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
 		String line;
 		int counter = 0;
 		while ((line = br.readLine()) != null && counter++ < 1000) {
@@ -128,6 +143,9 @@ public class PasswordWebsiteServlet extends HttpServlet {
 		return str;
 	}
 	
+	/*
+	 * Test the password and generate a single row table
+	 */
 	private String getTable(String pwdValue) throws Exception {
 		String str = getTableHeader();
 		double score = this.pc.getLanguageModel().test(pwdValue);

@@ -3,6 +3,11 @@ package project.lm;
 import java.util.HashSet;
 import java.util.Iterator;
 
+/*
+ * Represents all valid symbols in the language.
+ * Used to implement the transformations over the symbols (upper to lower case, 
+ * map all non-alphabetical characters to the special symbol) 
+ */
 public class Vocabulary {
 	HashSet<Gram> grams;
 	HashSet<Gram> mappedGrams;
@@ -34,7 +39,7 @@ public class Vocabulary {
 	}
 	
 	private Gram mapGram(Gram g) {
-		if (Character.isLetter(g.c()))
+		if (Character.isLetter(g.c()) && g.c() < 127)
 			return new Gram(Character.toLowerCase(g.c()));
 		if (g.c() == ' ')
 			return g;

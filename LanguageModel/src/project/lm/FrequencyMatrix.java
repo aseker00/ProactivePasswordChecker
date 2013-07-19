@@ -11,6 +11,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.StringTokenizer;
 
+/*
+ * A map from n-gram to frequency value.
+ * This can be used both for the counts as well as 
+ * for transition probability values (and alpha values)
+ */
 public class FrequencyMatrix {
 	private HashMap<NGram, Double> values;
 	
@@ -18,6 +23,10 @@ public class FrequencyMatrix {
 		this.values = new HashMap<NGram, Double>();
 	}
 
+	/*
+	 * For debugging purposes
+	 * Not sure it is valid anymore ...
+	 */
 	public void unitTest(File f) throws IOException {
 		HashMap<NGram, Double> unigramCount = new HashMap<NGram, Double>();
 		HashMap<NGram, Double> bigramCount = new HashMap<NGram, Double>();
@@ -77,6 +86,9 @@ public class FrequencyMatrix {
 			ps.close();
 	}
 
+	/*
+	 * Set a value in the matrix
+	 */
 	public void ngramFrequency(NGram ng, double val) {
 		if (ng == null)
 			throw new NullPointerException();
@@ -85,6 +97,10 @@ public class FrequencyMatrix {
 		else
 			this.values.put(ng, val);
 	}
+	
+	/*
+	 * Get a value from the matrix
+	 */
 	public double ngramFrequency(NGram ng) {
 		Double value = values.get(ng);
 		if (value == null)
@@ -95,6 +111,9 @@ public class FrequencyMatrix {
 		return values.keySet().iterator();
 	}
 	
+	/*
+	 * Tab separated values file format - one line per n-gram.
+	 */
 	public void save(File outputFile) throws IOException {
 		PrintStream ps = new PrintStream(outputFile);
 		Iterator<NGram> tIter = this.iterator();

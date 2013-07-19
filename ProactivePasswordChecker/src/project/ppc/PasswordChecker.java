@@ -14,6 +14,9 @@ import project.lm.KatzBackoffModel;
 import project.lm.LanguageModel;
 import project.lm.Perplexity;
 
+/*
+ * The main API
+ */
 public class PasswordChecker {
 	
 	private LanguageModel lm;
@@ -27,6 +30,9 @@ public class PasswordChecker {
 		load(modelType);
 	}
 	
+	/*
+	 * Save language model and threshold as well as the language model parameters (mean and standard deviation)
+	 */
 	public void save() throws Exception {
 		if (this.modelDir == null)
 			throw new Exception("modelDir = null");
@@ -47,6 +53,9 @@ public class PasswordChecker {
 		return initLanguageModel(new FileInputStream(configurationFile));
 	}
 	
+	/*
+	 * Read the configuration properties and create the language model
+	 */
 	private LanguageModel initLanguageModel(InputStream is) throws Exception {
 		LanguageModel lm = null;
 		this.configuration.load(is);
@@ -71,6 +80,9 @@ public class PasswordChecker {
 		return lm;
 	}
 	
+	/*
+	 * Save the configuration properties including the mean and standard deviation
+	 */
 	private void saveConfiguration(File configurationFile) throws IOException {
 		this.configuration.setProperty("mu", String.valueOf(this.lm.getMu()));
 		this.configuration.setProperty("sigma", String.valueOf(this.lm.getSigma()));
@@ -80,6 +92,11 @@ public class PasswordChecker {
 		this.configuration.store(new FileOutputStream(configurationFile), null);
 	}
 	
+	/*
+	 * Save the language model transition probability matrix.
+	 * Save also specific model data
+	 * The model is saved only after training which is done by the local application.
+	 */
 	private void saveModel(File dir) throws IOException {
 		String modelType = getModelType();
 		this.lm.getTransitionProbabilityMatrix().save(new File(dir.getPath() + "\\" + modelType + ".tpm.dat"));
@@ -93,6 +110,9 @@ public class PasswordChecker {
 		}
 	}
 	
+	/*
+	 * Currently support only these types:
+	 */
 	private String getModelType() {
 		if (this.lm instanceof GoodTuringModel)
 			return "gt";
@@ -101,6 +121,10 @@ public class PasswordChecker {
 		throw null;
 	}
 	
+	/*
+	 * If the module is loaded from a jar then need to load all the data from the jar resources.
+	 * Otherwise load them from the local file system.
+	 */
 	private void load(String type) throws Exception {
 		if (this.modelDir != null) {
 			File configurationFile = new File(this.modelDir.getPath() + "\\" + type + ".properties");
@@ -114,19 +138,32 @@ public class PasswordChecker {
 		}
 	}
 	
+	/*
+	 * Load the language model transition probability matrix.
+	 * Also load specific model data
+	 * This method is used when the program is run locally - load from file system
+	 */
 	private void loadModel(File dir) throws IOException {
 		String modelType = getModelType();
-		this.lm.getTransitionProbabilityMatrix().load(new File(dir.getPath() + "\\" + modelType + ".tpm.dat"));
-		if (this.lm instanceof KatzBackoffModel) {
-			File alphaFile = new File(dir.getPath() + "\\" + modelType + ".alpha.dat");
-			((KatzBackoffModel)this.lm).getAlpha().load(alphaFile);
-			File countsFile = new File(dir.getPath() + "\\" + modelType + ".counts.dat");
-			((KatzBackoffModel)this.lm).getCounts().load(countsFile);
-			File countsStarFile = new File(dir.getPath() + "\\" + modelType + ".cstar.dat");
-			((KatzBackoffModel)this.lm).getCountsStar().load(countsStarFile);
+		File tpmFile = new File(dir.getPath() + "\\" + modelType + ".tpm.dat");
+		if (tpmFile.exists()) {
+			this.lm.getTransitionProbabilityMatrix().load(tpmFile);
+			if (this.lm instanceof KatzBackoffModel) {
+				File alphaFile = new File(dir.getPath() + "\\" + modelType + ".alpha.dat");
+				((KatzBackoffModel)this.lm).getAlpha().load(alphaFile);
+				File countsFile = new File(dir.getPath() + "\\" + modelType + ".counts.dat");
+				((KatzBackoffModel)this.lm).getCounts().load(countsFile);
+				File countsStarFile = new File(dir.getPath() + "\\" + modelType + ".cstar.dat");
+				((KatzBackoffModel)this.lm).getCountsStar().load(countsStarFile);
+			}
 		}
 	}
 	
+	/*
+	 * Load the language model transition probability matrix.
+	 * Also load specific model data
+	 * This method is used by the web application where the resource is read from a jar
+	 */
 	private void loadModel() throws IOException {
 		String modelType = getModelType();
 		InputStream tpmInputStream = this.getClass().getResourceAsStream("/data/model/" + modelType + ".tpm.dat");
@@ -141,6 +178,7 @@ public class PasswordChecker {
 		}
 	}
 	
+	
 	public static void main(String[] args) {
 		if (args.length < 4) {
 			System.out.println("not enough arguments");
@@ -154,7 +192,7 @@ public class PasswordChecker {
 			PasswordChecker pc = new PasswordChecker(modelType, modelDir);
 			if (action.equals("train")) {
 				File trainingSetFile = new File(args[3]);
-				pc.getLanguageModel().trainingSet(trainingSetFile);
+				pc.getLanguageModel().train(trainingSetFile);
 				if (args.length > 4) {
 					File testSetFile = new File(args[4]);
 					Perplexity perplexity = new Perplexity(pc.getLanguageModel());
@@ -175,7 +213,7 @@ public class PasswordChecker {
 					flag = true;
 				}
 				File testSetFile = new File(args[args.length-1]);
-				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(testSetFile)));
+				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(testSetFile), "UTF-8"));
 				String line = null;
 				while ((line = br.readLine()) != null) {
 					double p = pc.getLanguageModel().test(line);
@@ -221,9 +259,9 @@ public class PasswordChecker {
 	}
 	
 	private static String usage() {
-		String str1 = "java PasswordChecker train <model_type> <model_dir> <training_set_file_path> [<test_set_file_path>]	;	train bad password language model and save transition matrix file [use test set file to evaluate the model]";
-		String str2 = "java PasswordChecker test <model_type> <model_dir> [-s] <test_set_file_path>	;	load transition matrix and test all the passwords in test set file";
-		String str3 = "java PasswordChecker pwd <model_type> <model_dir> [-s] <password>	;	load transition matrix and check password [-s for raw probability score]";
+		String str1 = "java PasswordChecker train <model_type> <model_dir> <training_set_file_path> [<test_set_file_path>]	;	train bad password language model and save it [use test set file to evaluate the model]";
+		String str2 = "java PasswordChecker test <model_type> <model_dir> [-s] <test_set_file_path>	;	load language model and test all the passwords in test set file [-s for including classification]";
+		String str3 = "java PasswordChecker pwd <model_type> <model_dir> [-s] <password>	;	load language model and check password [-s for including classification]";
 		return str1 + "\n" + str2 + "\n" + str3 + "\n";
 	}
 }
